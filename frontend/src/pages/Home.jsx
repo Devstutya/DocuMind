@@ -18,10 +18,10 @@ function Home() {
             Get Started
           </Link>
           <Link
-            to="/dashboard"
+            to="/demo"
             className="inline-block bg-white text-indigo-600 px-6 py-3 rounded-lg hover:bg-gray-50 transition border border-indigo-600"
           >
-            Dashboard
+            Try a Demo
           </Link>
         </div>
       </div>
