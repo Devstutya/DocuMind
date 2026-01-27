@@ -186,7 +186,7 @@ Key configuration options in `.env`:
 
 ## Performance Targets
 
-- Answer relevance: 92%+ on evaluation benchmarks
+- Answer relevance: 90%+ on evaluation benchmarks
 - Query latency: <1 second
 - Document capacity: 500+ PDFs
 - Follow-up query reduction: 35% with conversation memory
