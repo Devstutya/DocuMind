@@ -42,14 +42,16 @@ DocuMind is an AI-powered document Q&A system that lets users upload PDFs and as
 - Routing setup between all pages
 
 **IN PROGRESS:**
-- Backend API implementation (Phase 1-5)
+- Backend API implementation (Phases 1-4: PDF processing, chunking, embeddings, Pinecone, RAG chain)
 
 **TODO:**
-- Backend RAG pipeline
-- Authentication system
-- API integration with frontend
+- Backend RAG pipeline (Phases 1-4)
+- Docker setup for backend (Phase 5 - early validation)
+- Conversation memory (Phase 6)
+- Frontend-backend integration (Phase 7)
+- Authentication system (Phase 8)
 - Styling/improving UI/UX (polish, animations, accessibility)
-- Docker deployment
+- Full deployment (Phase 8)
 
 ---
 
@@ -459,7 +461,106 @@ async def query_documents(request: QueryRequest):
 
 ---
 
-### Phase 5: Conversation Memory (Days 10-11)
+### Phase 5: Docker Setup — Backend Only (Days 10-11)
+
+**Goals:** Containerize the backend API for production-ready deployment and easier sharing.
+
+**Tasks:**
+1. Create backend Dockerfile
+2. Set up docker-compose for backend
+3. Lock down requirements.txt with exact versions
+4. Add structured logging
+5. Test complete RAG pipeline in Docker (PDF upload → query)
+6. Write deployment documentation
+
+**Key Code — Backend Dockerfile:**
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY app/ ./app/
+
+# Create non-root user
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+**Key Code — Docker Compose (Backend Only) (`docker-compose.yml`):**
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+```
+
+**Key Code — Structured Logging (`backend/app/utils/logging.py`):**
+```python
+import logging
+import json
+from datetime import datetime
+
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_obj = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+        }
+        if record.exc_info:
+            log_obj["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_obj)
+
+def setup_logging():
+    handler = logging.StreamHandler()
+    handler.setFormatter(JSONFormatter())
+
+    logger = logging.getLogger("documind")
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
+
+    return logger
+
+logger = setup_logging()
+```
+
+**Why Docker Now:**
+- Validates complete RAG pipeline (PDF → embeddings → Pinecone → query) in production-like environment
+- Locks down Python dependencies early, catching version conflicts before building more features
+- Enables easy sharing: others can test with `docker-compose up` without local Python setup
+- Allows parallel frontend integration work against consistent Dockerized backend
+
+**Deliverables:**
+- [ ] Backend Docker image builds successfully
+- [ ] docker-compose starts backend and accepts requests
+- [ ] Complete RAG flow works in Docker (upload PDF, query, get answer with sources)
+- [ ] Logs output in JSON format
+- [ ] requirements.txt pinned to specific versions
+
+---
+
+### Phase 6: Conversation Memory (Days 12-13)
 
 **Goals:** Add multi-turn conversation support with sliding window context.
 
@@ -468,6 +569,7 @@ async def query_documents(request: QueryRequest):
 2. Add sliding window memory (keep last N turns)
 3. Modify prompt to include conversation history
 4. Handle follow-up questions with context
+5. Update Docker container with memory support
 
 **Key Code — Conversation Memory (`backend/app/rag/memory.py`):**
 ```python
@@ -480,7 +582,7 @@ class ConversationMemory:
         self.max_turns = max_turns
         self.ttl = timedelta(minutes=ttl_minutes)
         self.last_access = {}
-    
+
     def add_turn(self, conversation_id: str, question: str, answer: str):
         """Add a Q&A turn to conversation history."""
         self.conversations[conversation_id].append({
@@ -492,24 +594,24 @@ class ConversationMemory:
         if len(self.conversations[conversation_id]) > self.max_turns:
             self.conversations[conversation_id] = self.conversations[conversation_id][-self.max_turns:]
         self.last_access[conversation_id] = datetime.now()
-    
+
     def get_history(self, conversation_id: str) -> list[dict]:
         """Get conversation history for context."""
         self._cleanup_expired()
         return self.conversations.get(conversation_id, [])
-    
+
     def format_history(self, conversation_id: str) -> str:
         """Format history for prompt injection."""
         history = self.get_history(conversation_id)
         if not history:
             return ""
-        
+
         formatted = []
         for turn in history:
             formatted.append(f"User: {turn['question']}")
             formatted.append(f"Assistant: {turn['answer']}")
         return "\n".join(formatted)
-    
+
     def _cleanup_expired(self):
         """Remove expired conversations."""
         now = datetime.now()
@@ -545,29 +647,34 @@ Instructions:
 - [ ] Conversations persist across queries
 - [ ] Follow-up questions work ("What about X?" after asking about Y)
 - [ ] History auto-expires after inactivity
+- [ ] Memory works in Dockerized backend
 
 ---
 
-### Phase 6: React Frontend (Days 12-15) [MOSTLY COMPLETE]
+### Phase 7: Frontend Integration (Days 14-16) [MOSTLY COMPLETE]
 
-**Goals:** Build the chat interface with document upload and citations.
+**Goals:** Connect the existing React frontend to the Dockerized backend API.
 
-**Tasks:**
-1. [DONE] Set up React project with Vite
-2. [DONE] Create chat interface component
-3. [DONE] Build document upload component
-4. [DONE] Display source citations component
-5. [DONE] Add sidebar navigation
-6. [DONE] Create landing page with demo/full access paths
-7. [DONE] Create demo page (no auth required)
-8. [DONE] Create full dashboard with sidebar
-9. [TODO] Connect components to backend API (pending backend implementation)
-10. [TODO] Add drag-and-drop to document upload
-11. [TODO] Implement loading states and error handling
-12. [TODO] Add real-time chat functionality
-13. [TODO] Polish UI/UX (animations, transitions, accessibility improvements)
-14. [TODO] Improve responsive design for mobile devices
-15. [TODO] Add user feedback indicators (toasts, success/error messages)
+**Completed:**
+1. [DONE] React project with Vite + Tailwind
+2. [DONE] Chat interface component
+3. [DONE] Document upload component
+4. [DONE] Source citations component
+5. [DONE] Sidebar navigation
+6. [DONE] Landing page with demo/full access paths
+7. [DONE] Demo page (no auth required)
+8. [DONE] Full dashboard with sidebar
+
+**Remaining Tasks:**
+1. Connect frontend API calls to Dockerized backend
+2. Add drag-and-drop to document upload
+3. Implement loading states and error handling
+4. Add real-time chat functionality
+5. Polish UI/UX (animations, transitions, accessibility)
+6. Improve mobile responsiveness
+7. Add toast notifications for user feedback
+8. Test demo mode against Docker backend
+9. Containerize frontend (optional for now)
 
 **Key Code — Chat Interface (`frontend/src/components/ChatInterface.jsx`):**
 ```jsx
@@ -722,24 +829,24 @@ export default function SourceCitation({ sources }) {
 
 **Deliverables:**
 - [x] Chat interface with message history
-- [x] Document upload component (needs drag-and-drop enhancement)
+- [x] Document upload component
 - [x] Expandable source citations
 - [x] Responsive design (basic)
 - [x] Landing page with dual navigation paths
 - [x] Demo mode for unauthenticated users
 - [x] Full dashboard with sidebar navigation
-- [ ] Backend API integration (pending backend completion)
+- [ ] Backend API integration with Docker
 - [ ] Real-time chat updates
-- [ ] File upload progress indicators
-- [ ] UI/UX polish (animations, micro-interactions, accessibility)
-- [ ] Mobile responsiveness improvements
-- [ ] User feedback system (toasts, notifications)
+- [ ] Drag-and-drop file upload
+- [ ] Loading states and error handling
+- [ ] UI/UX polish (animations, transitions)
+- [ ] Toast notifications
 
 ---
 
-### Phase 7: Authentication & Security (Days 16-17)
+### Phase 8: Authentication & Full Deployment (Days 17-20)
 
-**Goals:** Add JWT authentication, rate limiting, and input validation.
+**Goals:** Add JWT authentication, rate limiting, and finalize production deployment.
 
 **Tasks:**
 1. Implement user registration and login
@@ -747,6 +854,10 @@ export default function SourceCitation({ sources }) {
 3. Protect API routes with auth middleware
 4. Add rate limiting per user
 5. Sanitize inputs
+6. Containerize frontend
+7. Update docker-compose for full stack (backend + frontend)
+8. Final deployment documentation
+9. Production environment configuration
 
 **Key Code — JWT Auth (`backend/app/auth/jwt.py`):**
 ```python
@@ -818,47 +929,6 @@ class RateLimiter:
 rate_limiter = RateLimiter()
 ```
 
-**Deliverables:**
-- [ ] User registration and login working
-- [ ] Protected routes require valid JWT
-- [ ] Rate limiting prevents abuse
-- [ ] Passwords hashed with bcrypt
-
----
-
-### Phase 8: Docker & Deployment (Days 18-20)
-
-**Goals:** Containerize the application, set up production configuration.
-
-**Tasks:**
-1. Create Dockerfiles for backend and frontend
-2. Set up Docker Compose for local development
-3. Add structured logging
-4. Configure environment variables
-5. Write deployment documentation
-
-**Key Code — Backend Dockerfile:**
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application
-COPY app/ ./app/
-
-# Create non-root user
-RUN useradd -m appuser && chown -R appuser:appuser /app
-USER appuser
-
-EXPOSE 8000
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
 **Key Code — Frontend Dockerfile:**
 ```dockerfile
 FROM node:20-alpine AS builder
@@ -876,7 +946,7 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-**Key Code — Docker Compose (`docker-compose.yml`):**
+**Key Code — Full Stack Docker Compose (`docker-compose.yml`):**
 ```yaml
 version: '3.8'
 
@@ -902,45 +972,15 @@ services:
     restart: unless-stopped
 ```
 
-**Key Code — Structured Logging (`backend/app/utils/logging.py`):**
-```python
-import logging
-import json
-from datetime import datetime
-
-class JSONFormatter(logging.Formatter):
-    def format(self, record):
-        log_obj = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "level": record.levelname,
-            "message": record.getMessage(),
-            "module": record.module,
-            "function": record.funcName,
-        }
-        if record.exc_info:
-            log_obj["exception"] = self.formatException(record.exc_info)
-        return json.dumps(log_obj)
-
-def setup_logging():
-    handler = logging.StreamHandler()
-    handler.setFormatter(JSONFormatter())
-    
-    logger = logging.getLogger("documind")
-    logger.setLevel(logging.INFO)
-    logger.addHandler(handler)
-    
-    return logger
-
-logger = setup_logging()
-```
-
 **Deliverables:**
-- [ ] Docker images build successfully
-- [ ] Docker Compose brings up full stack
-- [ ] Logs output in JSON format
-- [ ] Environment variables documented
+- [ ] User registration and login working
+- [ ] Protected routes require valid JWT
+- [ ] Rate limiting prevents abuse
+- [ ] Passwords hashed with bcrypt
+- [ ] Frontend containerized
+- [ ] Full stack runs with docker-compose
+- [ ] Production deployment documentation complete
 
----
 
 ## Environment Variables
 
@@ -1001,14 +1041,14 @@ def evaluate_relevance(questions: list, expected_answers: list):
 | 2 | 3-4 | Chunking, embeddings | TODO |
 | 3 | 5-6 | Pinecone integration | TODO |
 | 4 | 7-9 | RAG chain, query API | TODO |
-| 5 | 10-11 | Conversation memory | TODO |
-| 6 | 12-15 | React frontend | MOSTLY COMPLETE |
-| 7 | 16-17 | Auth, rate limiting | TODO |
-| 8 | 18-20 | Docker, deployment | TODO |
+| 5 | 10-11 | Docker setup (backend only) | TODO |
+| 6 | 12-13 | Conversation memory | TODO |
+| 7 | 14-16 | Frontend integration | MOSTLY COMPLETE |
+| 8 | 17-20 | Auth & full deployment | TODO |
 
 **Total: ~20 days** (can compress to 2 weeks with focused effort)
 
-**Current Progress:** Frontend structure complete (60% of Phase 6 done early). Backend phases 1-5 remain.
+**Current Progress:** Frontend structure complete (60% of Phase 7 done early). Backend Phases 1-6 remain. Docker moved to Phase 5 for early validation.
 
 ---
 
@@ -1017,20 +1057,23 @@ def evaluate_relevance(questions: list, expected_answers: list):
 **Frontend [READY]** - UI scaffolding complete, awaiting backend integration
 
 **Backend - Focus Here:**
-1. **This Week:**
+1. **This Week (Days 1-9):**
    - Phase 1: Set up FastAPI backend with PDF upload endpoint
    - Phase 2: Implement text chunking and OpenAI embeddings
    - Phase 3: Integrate Pinecone vector storage
-
-2. **Next Week:**
    - Phase 4: Build RAG chain and query API
-   - Phase 5: Add conversation memory
-   - Connect frontend to backend API
+
+2. **Next Week (Days 10-16):**
+   - Phase 5: Dockerize backend (CRITICAL MILESTONE - validates entire RAG pipeline)
+   - Phase 6: Add conversation memory to Dockerized backend
+   - Phase 7: Connect frontend to Dockerized backend API
    - Polish frontend UI/UX (parallel track)
 
-3. **Week 3:**
-   - Phase 7: Add JWT authentication
-   - Phase 8: Dockerize and deploy
+3. **Week 3 (Days 17-20):**
+   - Phase 8: Add JWT authentication, rate limiting
+   - Containerize frontend
+   - Finalize full-stack docker-compose
+   - Production deployment documentation
 
 **Priority Tasks (Backend Focus):**
 - [ ] Create backend directory structure
@@ -1049,4 +1092,10 @@ def evaluate_relevance(questions: list, expected_answers: list):
 - [ ] Polish color scheme and typography
 - [ ] Add smooth page transitions
 
-**Note:** Frontend is ahead of schedule with demo mode, full dashboard, and all base components ready. Focus on backend to enable end-to-end functionality.
+**Key Changes:**
+- Docker moved to Phase 5 (after RAG pipeline complete) for early validation
+- Enables testing complete PDF → query flow in production-like environment
+- Locks down dependencies early, catches conflicts before building more
+- Frontend is ahead of schedule - ready to connect to Dockerized backend
+
+**Note:** Frontend structure complete. Priority is building backend Phases 1-4, then immediately containerizing (Phase 5) to validate the RAG pipeline works end-to-end before adding more features.
