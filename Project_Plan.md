@@ -19,7 +19,7 @@ DocuMind is an AI-powered document Q&A system that lets users upload PDFs and as
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React, Tailwind CSS |
+| Frontend | React+Vite, Tailwind CSS |
 | Backend | FastAPI (Python) |
 | LLM Framework | LangChain |
 | LLM | OpenAI GPT-4 / GPT-4o-mini |
@@ -28,6 +28,28 @@ DocuMind is an AI-powered document Q&A system that lets users upload PDFs and as
 | PDF Processing | PyMuPDF (fitz), pdfplumber |
 | Auth | JWT tokens |
 | Containerization | Docker, Docker Compose |
+
+---
+
+## Current Status
+
+**COMPLETED:**
+- Frontend structure with React + Vite + Tailwind CSS
+- Landing page with dual-path navigation (demo vs. full access)
+- Demo mode implementation (try before authentication)
+- Full dashboard with sidebar navigation
+- Base components: ChatInterface, DocumentUpload, SourceCitation, Sidebar
+- Routing setup between all pages
+
+**IN PROGRESS:**
+- Backend API implementation (Phase 1-5)
+
+**TODO:**
+- Backend RAG pipeline
+- Authentication system
+- API integration with frontend
+- Styling/improving UI/UX (polish, animations, accessibility)
+- Docker deployment
 
 ---
 
@@ -63,23 +85,24 @@ documind/
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   └── .env.example
-├── frontend/
+├── frontend/                     [STRUCTURE COMPLETE]
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── ChatInterface.jsx
-│   │   │   ├── DocumentUpload.jsx
-│   │   │   ├── SourceCitation.jsx
-│   │   │   └── Sidebar.jsx
+│   │   │   ├── ChatInterface.jsx      [Created]
+│   │   │   ├── DocumentUpload.jsx     [Created]
+│   │   │   ├── SourceCitation.jsx     [Created]
+│   │   │   └── Sidebar.jsx            [Created]
 │   │   ├── pages/
-│   │   │   ├── Home.jsx
-│   │   │   ├── Login.jsx
-│   │   │   └── Dashboard.jsx
+│   │   │   ├── Home.jsx               [Landing page with dual CTAs]
+│   │   │   ├── Login.jsx              [Auth page]
+│   │   │   ├── DemoPage.jsx           [Demo mode (no auth)]
+│   │   │   └── Dashboard.jsx          [Full dashboard with sidebar]
 │   │   ├── hooks/
 │   │   │   └── useChat.js
 │   │   ├── services/
-│   │   │   └── api.js
-│   │   ├── App.jsx
-│   │   └── main.jsx
+│   │   │   └── api.js                 [Created]
+│   │   ├── App.jsx                    [Routing configured]
+│   │   └── main.jsx                   [Entry point]
 │   ├── package.json
 │   ├── Dockerfile
 │   └── tailwind.config.js
@@ -89,18 +112,52 @@ documind/
 
 ---
 
+## User Flow Architecture
+
+### Demo Mode vs. Full Access
+
+**Path 1: Demo Mode (No Authentication)**
+```
+Landing Page → "Try a Demo" → DemoPage
+- Allows immediate PDF upload and chat
+- No account required
+- Data not persisted
+- "Get Started" button visible to convert to full access
+```
+
+**Path 2: Full Access (Authentication Required)**
+```
+Landing Page → "Get Started" → Login/Register → Dashboard
+- Full sidebar navigation
+- Document management
+- Chat history
+- Settings & profile
+- Persistent data
+```
+
+**Dashboard Features (Sidebar Navigation):**
+- Chat: Main Q&A interface
+- My Documents: View/manage uploaded PDFs
+- Chat History: Browse previous conversations
+- Upload: Dedicated document upload
+- Settings: AI model, retrieval config
+- Profile: User info, usage stats
+
+---
+
 ## Implementation Phases
 
-### Phase 1: Project Setup & PDF Processing (Days 1-2)
+### Phase 1: Project Setup & PDF Processing (Days 1-2) [IN PROGRESS]
 
 **Goals:** Set up project structure, implement PDF upload and text extraction.
 
 **Tasks:**
-1. Initialize project directories
-2. Set up Python virtual environment
-3. Create FastAPI skeleton with health check endpoint
-4. Implement PDF text extraction with PyMuPDF
-5. Test with sample PDFs
+1. [DONE] Initialize project directories
+2. [DONE] Set up frontend structure (React + Vite)
+3. [TODO] Set up Python virtual environment
+4. [TODO] Create FastAPI skeleton with health check endpoint
+5. [TODO] Implement PDF text extraction with PyMuPDF
+6. [TODO] Test with sample PDFs
 
 **Key Code — PDF Parser (`backend/app/documents/parser.py`):**
 ```python
@@ -122,6 +179,8 @@ def extract_text_from_pdf(file_path: str) -> list[dict]:
 ```
 
 **Deliverables:**
+- [x] Frontend project structure complete (React + Vite + Tailwind)
+- [x] All frontend pages and components created
 - [ ] FastAPI app running locally
 - [ ] PDF upload endpoint accepting files
 - [ ] Text extraction working on test PDFs
@@ -489,16 +548,26 @@ Instructions:
 
 ---
 
-### Phase 6: React Frontend (Days 12-15)
+### Phase 6: React Frontend (Days 12-15) [MOSTLY COMPLETE]
 
 **Goals:** Build the chat interface with document upload and citations.
 
 **Tasks:**
-1. Set up React project with Vite
-2. Create chat interface component
-3. Build document upload with drag-and-drop
-4. Display source citations with highlights
-5. Add conversation sidebar
+1. [DONE] Set up React project with Vite
+2. [DONE] Create chat interface component
+3. [DONE] Build document upload component
+4. [DONE] Display source citations component
+5. [DONE] Add sidebar navigation
+6. [DONE] Create landing page with demo/full access paths
+7. [DONE] Create demo page (no auth required)
+8. [DONE] Create full dashboard with sidebar
+9. [TODO] Connect components to backend API (pending backend implementation)
+10. [TODO] Add drag-and-drop to document upload
+11. [TODO] Implement loading states and error handling
+12. [TODO] Add real-time chat functionality
+13. [TODO] Polish UI/UX (animations, transitions, accessibility improvements)
+14. [TODO] Improve responsive design for mobile devices
+15. [TODO] Add user feedback indicators (toasts, success/error messages)
 
 **Key Code — Chat Interface (`frontend/src/components/ChatInterface.jsx`):**
 ```jsx
@@ -652,10 +721,19 @@ export default function SourceCitation({ sources }) {
 ```
 
 **Deliverables:**
-- [ ] Chat interface with message history
-- [ ] Document upload with progress indicator
-- [ ] Expandable source citations
-- [ ] Responsive design
+- [x] Chat interface with message history
+- [x] Document upload component (needs drag-and-drop enhancement)
+- [x] Expandable source citations
+- [x] Responsive design (basic)
+- [x] Landing page with dual navigation paths
+- [x] Demo mode for unauthenticated users
+- [x] Full dashboard with sidebar navigation
+- [ ] Backend API integration (pending backend completion)
+- [ ] Real-time chat updates
+- [ ] File upload progress indicators
+- [ ] UI/UX polish (animations, micro-interactions, accessibility)
+- [ ] Mobile responsiveness improvements
+- [ ] User feedback system (toasts, notifications)
 
 ---
 
@@ -917,25 +995,58 @@ def evaluate_relevance(questions: list, expected_answers: list):
 
 ## Timeline Summary
 
-| Phase | Days | Focus |
-|-------|------|-------|
-| 1 | 1-2 | Project setup, PDF extraction |
-| 2 | 3-4 | Chunking, embeddings |
-| 3 | 5-6 | Pinecone integration |
-| 4 | 7-9 | RAG chain, query API |
-| 5 | 10-11 | Conversation memory |
-| 6 | 12-15 | React frontend |
-| 7 | 16-17 | Auth, rate limiting |
-| 8 | 18-20 | Docker, deployment |
+| Phase | Days | Focus | Status |
+|-------|------|-------|--------|
+| 1 | 1-2 | Project setup, PDF extraction | IN PROGRESS (Frontend: DONE, Backend: TODO) |
+| 2 | 3-4 | Chunking, embeddings | TODO |
+| 3 | 5-6 | Pinecone integration | TODO |
+| 4 | 7-9 | RAG chain, query API | TODO |
+| 5 | 10-11 | Conversation memory | TODO |
+| 6 | 12-15 | React frontend | MOSTLY COMPLETE |
+| 7 | 16-17 | Auth, rate limiting | TODO |
+| 8 | 18-20 | Docker, deployment | TODO |
 
 **Total: ~20 days** (can compress to 2 weeks with focused effort)
 
+**Current Progress:** Frontend structure complete (60% of Phase 6 done early). Backend phases 1-5 remain.
+
 ---
 
-## Next Steps
+## Next Immediate Steps
 
-1. **Today**: Set up project directory, install dependencies
-2. **This week**: Complete Phases 1-3 (PDF → Pinecone pipeline)
-3. **Next week**: Build RAG chain and basic frontend
+**Frontend [READY]** - UI scaffolding complete, awaiting backend integration
 
-Let me know which phase you want to start with, and I can provide more detailed guidance!
+**Backend - Focus Here:**
+1. **This Week:**
+   - Phase 1: Set up FastAPI backend with PDF upload endpoint
+   - Phase 2: Implement text chunking and OpenAI embeddings
+   - Phase 3: Integrate Pinecone vector storage
+
+2. **Next Week:**
+   - Phase 4: Build RAG chain and query API
+   - Phase 5: Add conversation memory
+   - Connect frontend to backend API
+   - Polish frontend UI/UX (parallel track)
+
+3. **Week 3:**
+   - Phase 7: Add JWT authentication
+   - Phase 8: Dockerize and deploy
+
+**Priority Tasks (Backend Focus):**
+- [ ] Create backend directory structure
+- [ ] Set up Python virtual environment
+- [ ] Install backend dependencies (FastAPI, LangChain, OpenAI, Pinecone, PyMuPDF)
+- [ ] Create FastAPI main.py with health check
+- [ ] Implement PDF upload endpoint
+- [ ] Test PDF text extraction
+
+**Parallel Track (Frontend Polish):**
+- [ ] Add loading skeletons and transitions
+- [ ] Implement drag-and-drop for file upload
+- [ ] Add toast notifications for user actions
+- [ ] Improve mobile responsiveness
+- [ ] Add keyboard shortcuts and accessibility features
+- [ ] Polish color scheme and typography
+- [ ] Add smooth page transitions
+
+**Note:** Frontend is ahead of schedule with demo mode, full dashboard, and all base components ready. Focus on backend to enable end-to-end functionality.
