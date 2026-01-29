@@ -122,7 +122,7 @@ react, react-dom, react-router-dom, lucide-react, tailwindcss
 ## Resume Claims to Validate
 
 When building, track these metrics:
-- Answer relevance: Target 92%+ on evaluation benchmarks
+- Answer relevance: Target 90%+ on evaluation benchmarks
 - Query latency: Target sub-second (<1s)
 - Document capacity: Support 500+ PDFs
 - Follow-up reduction: 35% fewer follow-up queries with conversation memory
