@@ -48,14 +48,13 @@ DocuMind is a full-stack web application that enables users to upload PDF docume
 
 ### **Phase 1: Project Setup** 
 **Duration:** 1 week
-**Status:** Done
 
 **Deliverables:**
-- [x] Project structure and file organization
-- [x] Frontend UI components (React + Tailwind CSS)
-- [x] Backend skeleton (FastAPI)
-- [x] Docker configuration
-- [x] Development environment setup
+- Project structure and file organization
+- Frontend UI components (React + Tailwind CSS)
+- Backend skeleton (FastAPI)
+- Docker configuration
+- Development environment setup
 
 **Key Features Delivered:**
 - Landing page with demo mode
@@ -65,17 +64,17 @@ DocuMind is a full-stack web application that enables users to upload PDF docume
 
 ---
 
-### **Phase 2: Authentication & PDF Processing** [IN PROGRESS]
+### **Phase 2: Authentication & PDF Processing** 
 **Duration:** 1 week
 **Target Completion:** Week 2
 
 **Deliverables:**
-- [ ] User registration and login system
-- [ ] JWT token-based authentication
-- [ ] PDF upload endpoint
-- [ ] Text extraction from PDFs
-- [ ] Document chunking strategy
-- [ ] OpenAI embeddings generation
+- User registration and login system
+- JWT token-based authentication
+- PDF upload endpoint
+- Text extraction from PDFs
+- Document chunking strategy
+- OpenAI embeddings generation
 
 **Key Milestones:**
 - Users can create accounts and log in securely
@@ -84,16 +83,16 @@ DocuMind is a full-stack web application that enables users to upload PDF docume
 
 ---
 
-### **Phase 3: Vector Storage & Search** [UPCOMING]
+### **Phase 3: Vector Storage & Search** 
 **Duration:** 4-5 days
 **Target Completion:** Week 3
 
 **Deliverables:**
-- [ ] Pinecone vector database integration
-- [ ] Batch document upload to vector store
-- [ ] Semantic similarity search
-- [ ] Document metadata management
-- [ ] Document deletion functionality
+- Pinecone vector database integration
+- Batch document upload to vector store
+- Semantic similarity search
+- Document metadata management
+- Document deletion functionality
 
 **Key Milestones:**
 - Documents are stored in vector database
@@ -102,17 +101,17 @@ DocuMind is a full-stack web application that enables users to upload PDF docume
 
 ---
 
-### **Phase 4: RAG Query Pipeline** [UPCOMING]
+### **Phase 4: RAG Query Pipeline**
 **Duration:** 5-6 days
 **Target Completion:** Week 3-4
 
 **Deliverables:**
-- [ ] Query endpoint implementation
-- [ ] LangChain RAG chain setup
-- [ ] Context retrieval and formatting
-- [ ] Answer generation with citations
-- [ ] Conversation memory (5-turn sliding window)
-- [ ] Follow-up question support
+- Query endpoint implementation
+- LangChain RAG chain setup
+- Context retrieval and formatting
+- Answer generation with citations
+- Conversation memory (5-turn sliding window)
+- Follow-up question support
 
 **Key Milestones:**
 - Users can ask questions and receive AI-generated answers
@@ -121,17 +120,17 @@ DocuMind is a full-stack web application that enables users to upload PDF docume
 
 ---
 
-### **Phase 5: Production Polish** [UPCOMING]
+### **Phase 5: Production Polish** 
 **Duration:** 4-5 days
 **Target Completion:** Week 4
 
 **Deliverables:**
-- [ ] Rate limiting (20 requests/minute)
-- [ ] Error handling and logging
-- [ ] Document management endpoints
-- [ ] Frontend-backend integration
-- [ ] UI/UX improvements
-- [ ] Testing and bug fixes
+- Rate limiting (20 requests/minute)
+- Error handling and logging
+- Document management endpoints
+- Frontend-backend integration
+- UI/UX improvements
+- Testing and bug fixes
 
 **Key Milestones:**
 - Complete end-to-end workflow tested
@@ -140,21 +139,8 @@ DocuMind is a full-stack web application that enables users to upload PDF docume
 
 ---
 
-## 5. Timeline Overview
 
-```
-Week 1: [████████████████████] Setup & Structure (COMPLETE)
-Week 2: [████████░░░░░░░░░░░░] Auth & PDF Processing (IN PROGRESS)
-Week 3: [░░░░░░░░░░░░░░░░░░░░] Vector Storage & RAG Pipeline
-Week 4: [░░░░░░░░░░░░░░░░░░░░] Polish & Deployment
-```
-
-**Current Progress:** 25% Complete
-**Estimated Completion:** 3 weeks from now
-
----
-
-## 6. Key Features
+## 5. Key Features
 
 ### For Users
 - **Demo Mode:** Try the system without creating an account
@@ -172,7 +158,7 @@ Week 4: [░░░░░░░░░░░░░░░░░░░░] Polish & 
 
 ---
 
-## 7. Resource Requirements
+## 6. Resource Requirements
 
 ### APIs & Services
 - **OpenAI API:** GPT-4o-mini + text-embedding-3-small (~$10-20/month during dev)
@@ -189,7 +175,7 @@ Week 4: [░░░░░░░░░░░░░░░░░░░░] Polish & 
 
 ---
 
-## 8. Risk Management
+## 7. Risk Management
 
 | Risk | Mitigation Strategy |
 |------|---------------------|
@@ -200,7 +186,7 @@ Week 4: [░░░░░░░░░░░░░░░░░░░░] Polish & 
 
 ---
 
-## 9. Testing Strategy
+## 8. Testing Strategy
 
 ### Phase-by-Phase Testing
 1. **Unit Tests:** Individual components (PDF parsing, chunking, embeddings)
