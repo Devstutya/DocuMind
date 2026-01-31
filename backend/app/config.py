@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 20
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file="../.env",  # Look for .env in project root
         env_file_encoding="utf-8",
         case_sensitive=True
     )
