@@ -191,9 +191,6 @@ Key configuration options in `.env`:
 - Document capacity: 500+ PDFs
 - Follow-up query reduction: 35% with conversation memory
 
-## Contributing
-
-See [CLAUDE.md](CLAUDE.md) for detailed implementation guidelines and coding standards.
 
 ## License
 
