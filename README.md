@@ -61,8 +61,7 @@ PINECONE_API_KEY=your-pinecone-api-key
 JWT_SECRET_KEY=your-secret-key  # Generate with: openssl rand -hex 32
 ```
 
-### 3. Option A: Docker Deployment (Recommended)
-
+### 3. Option A: Docker Deployment
 ```bash
 # Build and start all services
 docker-compose up --build
