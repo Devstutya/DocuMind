@@ -123,32 +123,43 @@ documind/
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
-│   │   ├── main.py              # FastAPI entry point [CREATED]
-│   │   ├── config.py            # Settings & env vars [CREATED]
-│   │   ├── models.py            # Pydantic schemas [CREATED]
+│   │   ├── main.py              # FastAPI entry point [DONE]
+│   │   ├── config.py            # Settings & env vars [DONE]
+│   │   ├── models.py            # Pydantic schemas [DONE]
+│   │   ├── database.py          # Async SQLAlchemy engine, Base, get_db [DONE]
+│   │   ├── db_models.py         # UserModel, DocumentModel ORM models [DONE]
 │   │   ├── auth/
-│   │   │   ├── __init__.py      [CREATED]
+│   │   │   ├── __init__.py
 │   │   │   ├── jwt.py           # Token creation/validation [DONE]
 │   │   │   └── routes.py        # Login/register/me endpoints [DONE]
+│   │   ├── demo/
+│   │   │   ├── __init__.py
+│   │   │   └── routes.py        # Unauthenticated demo upload [DONE]
 │   │   ├── documents/
-│   │   │   ├── __init__.py      [CREATED]
+│   │   │   ├── __init__.py
 │   │   │   ├── parser.py        # PDF text extraction [DONE]
 │   │   │   ├── chunker.py       # Text chunking [DONE]
 │   │   │   ├── embeddings.py    # OpenAI embedding calls [DONE]
 │   │   │   └── routes.py        # Upload/list/delete endpoints [DONE]
 │   │   ├── rag/
-│   │   │   ├── __init__.py      [CREATED]
-│   │   │   ├── retriever.py     # Pinecone query logic [TODO]
+│   │   │   ├── __init__.py
+│   │   │   ├── retriever.py     # Pinecone query logic [DONE]
 │   │   │   ├── chain.py         # LangChain QA chain [TODO]
 │   │   │   ├── memory.py        # Conversation memory [TODO]
 │   │   │   └── routes.py        # Query endpoint [TODO]
 │   │   └── utils/
-│   │       ├── __init__.py      [CREATED]
+│   │       ├── __init__.py
 │   │       ├── logging.py       # Structured logging [TODO]
 │   │       └── rate_limit.py    # Rate limiting [TODO]
-│   ├── requirements.txt         [CREATED]
-│   ├── Dockerfile               [CREATED]
-│   └── .env.example             [CREATED]
+│   ├── alembic/                 # Migrations [DONE]
+│   │   ├── env.py
+│   │   ├── script.py.mako
+│   │   └── versions/
+│   │       └── 0001_create_users_and_documents.py
+│   ├── alembic.ini              [DONE]
+│   ├── requirements.txt         [DONE]
+│   ├── Dockerfile               [DONE]
+│   └── .env.example             [DONE]
 ├── frontend/                    [COMPLETE]
 │   ├── src/
 │   │   ├── components/
