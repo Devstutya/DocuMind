@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.auth.routes import router as auth_router
 
 app = FastAPI(
     title="DocuMind API",
@@ -27,11 +28,10 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
 
-# TODO: Import and include routers for auth, documents, and RAG endpoints
-# from app.auth.routes import router as auth_router
+app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+
+# TODO: Uncomment as each phase is implemented
 # from app.documents.routes import router as documents_router
 # from app.rag.routes import router as rag_router
-#
-# app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 # app.include_router(documents_router, prefix="/api/documents", tags=["documents"])
 # app.include_router(rag_router, prefix="/api/rag", tags=["rag"])
