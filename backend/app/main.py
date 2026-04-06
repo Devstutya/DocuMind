@@ -56,10 +56,9 @@ async def health_check():
 
 
 
+from app.rag.routes import router as rag_router
+
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(demo_router, prefix="/api/demo", tags=["demo"])
 app.include_router(documents_router, prefix="/api/documents", tags=["documents"])
-
-# TODO: Uncomment as each phase is implemented
-# from app.rag.routes import router as rag_router
-# app.include_router(rag_router, prefix="/api/rag", tags=["rag"])
+app.include_router(rag_router, prefix="/api/rag", tags=["rag"])

@@ -10,7 +10,11 @@
       "Bash(python -m pytest tests/ -v --tb=short)",
       "Bash(venv/Scripts/python.exe -m pytest tests/ -v)",
       "Bash(venv/Scripts/pip install:*)",
-      "Bash(venv/Scripts/python.exe -c \"import os; os.environ['DATABASE_URL'] = 'sqlite+aiosqlite:///:memory:'; os.environ.setdefault\\('OPENAI_API_KEY', 'sk-test'\\); os.environ.setdefault\\('PINECONE_API_KEY', 'test'\\); os.environ.setdefault\\('JWT_SECRET_KEY', 'test-secret'\\); from app.config import settings; print\\(settings.DATABASE_URL\\)\")"
+      "Bash(venv/Scripts/python.exe -c \"import os; os.environ['DATABASE_URL'] = 'sqlite+aiosqlite:///:memory:'; os.environ.setdefault\\('OPENAI_API_KEY', 'sk-test'\\); os.environ.setdefault\\('PINECONE_API_KEY', 'test'\\); os.environ.setdefault\\('JWT_SECRET_KEY', 'test-secret'\\); from app.config import settings; print\\(settings.DATABASE_URL\\)\")",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(venv/Scripts/python.exe -c \"import langchain; print\\(langchain.__version__\\)\")",
+      "Bash(venv/Scripts/python.exe -c \"from langchain_core.prompts import ChatPromptTemplate; print\\('ok'\\)\")",
+      "Bash(venv/Scripts/python.exe -c \"from langchain_core.prompts import ChatPromptTemplate; from langchain_core.output_parsers import StrOutputParser; print\\('core ok'\\)\")"
     ]
   }
 }

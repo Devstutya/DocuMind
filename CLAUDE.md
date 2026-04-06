@@ -107,12 +107,22 @@ DocuMind is an AI-powered document Q&A system using Retrieval-Augmented Generati
 - [x] Pinecone failure on delete is swallowed — outage can't permanently block deletion
 - [x] Tests: 44/44 passing (`tests/test_routes/test_documents.py` + `tests/test_rag/test_retriever.py`)
 
-### 🔄 Current Phase: Phase 4 — RAG Query Pipeline
+### ✅ Completed (Phase 4) — RAG Query Pipeline
+
+- [x] `rag/chain.py` — `generate_answer()` async LangChain chain with GPT-4o-mini (`langchain_core` imports)
+- [x] `rag/memory.py` — `ConversationMemory` singleton, 5-turn sliding window, 30min TTL expiry
+- [x] `rag/routes.py` — `POST /api/rag/query` (auth required), `GET /api/rag/conversations/{id}`
+- [x] History injected into LLM prompt only (not vector query — would dilute retrieval signal)
+- [x] Filename falls back to `doc_id` if document deleted after upload
+- [x] `main.py` — RAG router wired at `/api/rag`
+- [x] Tests: 57/57 passing (`tests/test_rag/test_routes.py`)
+
+### 🔄 Current Phase: Phase 5 — Rate Limiting & Polish
 
 **Ready to Implement:**
-- `rag/chain.py` — LangChain QA chain with GPT-4o-mini
-- `rag/memory.py` — sliding window conversation memory (5 turns, 30min TTL)
-- `rag/routes.py` — `POST /api/query` endpoint
+- `utils/rate_limit.py` — 20 req/min per user
+- `utils/logging.py` — structured JSON logging
+- Frontend wiring — connect ChatInterface to `POST /api/rag/query`
 
 ---
 
@@ -144,9 +154,9 @@ documind/
 │   │   ├── rag/
 │   │   │   ├── __init__.py
 │   │   │   ├── retriever.py     # Pinecone query logic [DONE]
-│   │   │   ├── chain.py         # LangChain QA chain [TODO]
-│   │   │   ├── memory.py        # Conversation memory [TODO]
-│   │   │   └── routes.py        # Query endpoint [TODO]
+│   │   │   ├── chain.py         # LangChain QA chain [DONE]
+│   │   │   ├── memory.py        # Conversation memory [DONE]
+│   │   │   └── routes.py        # Query endpoint [DONE]
 │   │   └── utils/
 │   │       ├── __init__.py
 │   │       ├── logging.py       # Structured logging [TODO]
