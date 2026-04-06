@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { FileText, Upload, Settings, Sliders, MessageSquare, BarChart3, User as UserIcon } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { FileText, Upload, Settings, Sliders, MessageSquare, BarChart3, User as UserIcon, LogOut, ChevronDown } from 'lucide-react'
 import Sidebar from '../components/Sidebar'
 import DocumentUpload from '../components/DocumentUpload'
 import ChatInterface from '../components/ChatInterface'
@@ -286,6 +286,8 @@ function Dashboard() {
   const [activeSection, setActiveSection]         = useState('chat')
   const [user, setUser]                           = useState(null)
   const [documentCount, setDocumentCount]         = useState(0)
+  const [menuOpen, setMenuOpen]                   = useState(false)
+  const menuRef                                   = useRef(null)
 
   useEffect(() => {
     api.getMe().then(setUser).catch(() => {})
@@ -293,6 +295,27 @@ function Dashboard() {
       .then(data => setDocumentCount(data.total ?? 0))
       .catch(() => {})
   }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  function handleMenuNav(section) {
+    setActiveSection(section)
+    setMenuOpen(false)
+  }
+
+  function handleSignOut() {
+    api.logout()
+    window.location.href = '/'
+  }
 
   const sectionTitles = {
     chat:      'Chat',
@@ -336,13 +359,63 @@ function Dashboard() {
               </h1>
             </div>
             {user && (
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center">
-                  <span className="text-xs font-bold text-white">
-                    {user.username?.[0]?.toUpperCase() ?? 'U'}
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setMenuOpen(o => !o)}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl
+                             hover:bg-navy-800 transition-colors duration-150 group"
+                  aria-haspopup="true"
+                  aria-expanded={menuOpen}
+                >
+                  <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-white">
+                      {user.username?.[0]?.toUpperCase() ?? 'U'}
+                    </span>
+                  </div>
+                  <span className="text-xs font-medium text-navy-300 group-hover:text-white transition-colors">
+                    {user.username}
                   </span>
-                </div>
-                <span className="text-xs font-medium text-navy-300">{user.username}</span>
+                  <ChevronDown
+                    size={13}
+                    className={`text-navy-500 transition-transform duration-150 ${menuOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {menuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-navy-800 border border-navy-700
+                                  rounded-xl shadow-panel overflow-hidden z-50 animate-fade-in">
+                    <div className="px-3 py-2.5 border-b border-navy-700">
+                      <p className="text-xs font-semibold text-white truncate">{user.username}</p>
+                      <p className="text-2xs text-navy-400 truncate">{user.email}</p>
+                    </div>
+                    <div className="py-1">
+                      {[
+                        { label: 'Profile',  icon: UserIcon,     section: 'profile'  },
+                        { label: 'Settings', icon: Settings,     section: 'settings' },
+                      ].map(({ label, icon: Icon, section }) => (
+                        <button
+                          key={section}
+                          onClick={() => handleMenuNav(section)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-navy-300
+                                     hover:text-white hover:bg-navy-700 transition-colors duration-100 text-left"
+                        >
+                          <Icon size={13} className="shrink-0" />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="border-t border-navy-700 py-1">
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-400
+                                   hover:text-red-300 hover:bg-red-900/20 transition-colors duration-100 text-left"
+                      >
+                        <LogOut size={13} className="shrink-0" />
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

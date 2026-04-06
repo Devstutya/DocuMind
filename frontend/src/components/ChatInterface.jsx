@@ -30,7 +30,7 @@ function TypingIndicator() {
 }
 
 /* ── Empty state ── */
-function EmptyState() {
+function EmptyState({ onPromptClick }) {
   const prompts = [
     'What are the key findings in this document?',
     'Summarize the main arguments made.',
@@ -47,12 +47,15 @@ function EmptyState() {
       </p>
       <div className="flex flex-col gap-2 w-full max-w-sm">
         {prompts.map(p => (
-          <div
+          <button
             key={p}
-            className="text-xs text-navy-300 bg-navy-800 border border-navy-700 rounded-lg px-3 py-2 text-left"
+            onClick={() => onPromptClick(p)}
+            className="text-xs text-navy-300 bg-navy-800 border border-navy-700 rounded-lg px-3 py-2
+                       text-left hover:bg-navy-700 hover:border-violet-600/40 hover:text-white
+                       transition-all duration-150 cursor-pointer"
           >
             {p}
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -141,23 +144,20 @@ function ChatInterface({ selectedDocuments }) {
 
   useEffect(() => { scrollToBottom() }, [messages, loading])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!input.trim() || loading) return
+  const submitQuery = async (text) => {
+    if (!text.trim() || loading) return
 
-    const userMessage = {
+    setMessages(prev => [...prev, {
       role: 'user',
-      content: input,
+      content: text,
       timestamp: new Date().toISOString(),
-    }
-
-    setMessages(prev => [...prev, userMessage])
+    }])
     setInput('')
     setLoading(true)
 
     try {
       const response = await api.query(
-        input,
+        text,
         selectedDocuments.length > 0 ? selectedDocuments : null,
         conversationId
       )
@@ -178,6 +178,11 @@ function ChatInterface({ selectedDocuments }) {
       setLoading(false)
       setTimeout(() => inputRef.current?.focus(), 50)
     }
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    submitQuery(input)
   }
 
   return (
@@ -208,7 +213,9 @@ function ChatInterface({ selectedDocuments }) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
-        {messages.length === 0 && !loading && <EmptyState />}
+        {messages.length === 0 && !loading && (
+          <EmptyState onPromptClick={prompt => submitQuery(prompt)} />
+        )}
         {messages.map((msg, i) => <Message key={i} message={msg} />)}
         {loading && <TypingIndicator />}
         <div ref={messagesEndRef} />
