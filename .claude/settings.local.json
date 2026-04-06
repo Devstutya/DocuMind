@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/test_routes/test_documents.py -v)",
+      "Bash(./venv/Scripts/python.exe -c \"import langchain; print\\(langchain.__version__\\)\")",
+      "Bash(./venv/Scripts/python.exe -c \"from langchain_text_splitters import RecursiveCharacterTextSplitter; print\\('langchain_text_splitters OK'\\)\")",
+      "Bash(./venv/Scripts/python.exe -c \"from langchain.text_splitter import RecursiveCharacterTextSplitter; print\\('langchain.text_splitter OK'\\)\")",
+      "Bash(./venv/Scripts/python.exe -m pytest tests/test_routes/test_documents.py -v)",
+      "Bash(./venv/Scripts/python.exe -m pytest tests/ -v)"
+    ]
+  }
+}

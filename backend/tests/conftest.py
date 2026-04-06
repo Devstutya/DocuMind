@@ -1,5 +1,7 @@
 # backend/tests/conftest.py
 import os
+import shutil
+import tempfile
 
 # Set required environment variables BEFORE importing the app so that
 # pydantic-settings can construct the Settings object without a real .env file.
@@ -14,6 +16,8 @@ from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 from app.auth import routes as auth_routes_module
+from app.documents import routes as documents_routes_module
+from app.config import settings
 
 
 @pytest_asyncio.fixture
@@ -26,8 +30,22 @@ async def client() -> AsyncClient:
 
 
 @pytest.fixture(autouse=True)
-def reset_user_store():
-    """Clear the in-memory user store before every test to ensure isolation."""
+def reset_stores(tmp_path):
+    """Clear all in-memory stores and point UPLOAD_DIR at a temp directory.
+
+    Using a per-test temp directory keeps uploaded files isolated and avoids
+    leftover files on disk between test runs.
+    """
     auth_routes_module._users.clear()
+    documents_routes_module._documents.clear()
+
+    # Redirect uploads to a fresh temp directory for each test.
+    original_upload_dir = settings.UPLOAD_DIR
+    settings.UPLOAD_DIR = str(tmp_path)
+
     yield
+
+    # Restore original value and clear stores again for safety.
+    settings.UPLOAD_DIR = original_upload_dir
     auth_routes_module._users.clear()
+    documents_routes_module._documents.clear()
