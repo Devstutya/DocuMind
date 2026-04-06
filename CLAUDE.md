@@ -70,10 +70,27 @@ DocuMind is an AI-powered document Q&A system using Retrieval-Augmented Generati
 - [x] Create .env file with all credentials
 - [x] Test backend startup: `uvicorn app.main:app --reload` ✅ **BACKEND RUNNING**
 
-### 🔄 Current Phase: Phase 2a - Authentication System Implementation
+### ✅ Completed (Phase 2a) — Authentication System
+
+- [x] `auth/jwt.py` — password hashing (bcrypt), JWT creation/validation, `get_current_user` dependency
+- [x] `auth/routes.py` — `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
+- [x] In-memory user store (to be replaced with DB in a later phase)
+- [x] Tests: 13/13 passing (`tests/test_routes/test_auth.py`)
+
+### ✅ Completed (Phase 2b) — PDF Upload & Processing
+
+- [x] `documents/parser.py` — PyMuPDF text extraction, page-by-page, skips blank pages
+- [x] `documents/chunker.py` — `RecursiveCharacterTextSplitter` (1000 chars, 200 overlap), per-page chunking
+- [x] `documents/embeddings.py` — OpenAI `text-embedding-3-small` wrapper (stubbed in upload until Phase 3)
+- [x] `documents/routes.py` — `POST /api/documents/upload`, `GET /api/documents/`, `DELETE /api/documents/{id}`
+- [x] In-memory document store (to be replaced when Pinecone is wired in Phase 3)
+- [x] Tests: 25/25 passing (`tests/test_routes/test_documents.py`)
+
+### 🔄 Current Phase: Phase 3 — Pinecone Vector Storage
 
 **Ready to Implement:**
-- Authentication is next! All prerequisites complete.
+- Wire `get_embeddings()` and `upsert_chunks()` into the upload route
+- Implement `rag/retriever.py` (Pinecone index creation, upsert, similarity search, delete)
 
 ---
 
@@ -89,14 +106,14 @@ documind/
 │   │   ├── models.py            # Pydantic schemas [CREATED]
 │   │   ├── auth/
 │   │   │   ├── __init__.py      [CREATED]
-│   │   │   ├── jwt.py           # Token creation/validation [TODO]
-│   │   │   └── routes.py        # Login/register endpoints [TODO]
+│   │   │   ├── jwt.py           # Token creation/validation [DONE]
+│   │   │   └── routes.py        # Login/register/me endpoints [DONE]
 │   │   ├── documents/
 │   │   │   ├── __init__.py      [CREATED]
-│   │   │   ├── parser.py        # PDF text extraction [TODO]
-│   │   │   ├── chunker.py       # Text chunking [TODO]
-│   │   │   ├── embeddings.py    # OpenAI embedding calls [TODO]
-│   │   │   └── routes.py        # Upload/delete endpoints [TODO]
+│   │   │   ├── parser.py        # PDF text extraction [DONE]
+│   │   │   ├── chunker.py       # Text chunking [DONE]
+│   │   │   ├── embeddings.py    # OpenAI embedding calls [DONE]
+│   │   │   └── routes.py        # Upload/list/delete endpoints [DONE]
 │   │   ├── rag/
 │   │   │   ├── __init__.py      [CREATED]
 │   │   │   ├── retriever.py     # Pinecone query logic [TODO]
