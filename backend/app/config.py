@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 20
 
+    # Database
+    DATABASE_URL: str = "sqlite+aiosqlite:///./documind.db"
+
     model_config = SettingsConfigDict(
         env_file=".env",  # Look for .env in backend directory
         env_file_encoding="utf-8",

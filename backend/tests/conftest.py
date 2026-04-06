@@ -1,7 +1,5 @@
 # backend/tests/conftest.py
 import os
-import shutil
-import tempfile
 
 # Set required environment variables BEFORE importing the app so that
 # pydantic-settings can construct the Settings object without a real .env file.
@@ -9,43 +7,64 @@ import tempfile
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-openai-key")
 os.environ.setdefault("PINECONE_API_KEY", "test-pinecone-key")
 os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret-key-for-unit-tests-only")
+# Use an in-memory SQLite database so tests are fully isolated and leave no
+# files on disk.
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.main import app
-from app.auth import routes as auth_routes_module
-from app.documents import routes as documents_routes_module
 from app.config import settings
+from app.database import Base, get_db
+from app.main import app as fastapi_app
+
+# ---------------------------------------------------------------------------
+# Per-test in-memory database engine and session override
+# ---------------------------------------------------------------------------
+
+_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
 @pytest_asyncio.fixture
-async def client() -> AsyncClient:
-    """Async HTTP client wired directly to the FastAPI app (no network calls)."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
-        yield ac
+async def client(tmp_path) -> AsyncClient:
+    """Async HTTP client wired directly to the FastAPI app.
 
-
-@pytest.fixture(autouse=True)
-def reset_stores(tmp_path):
-    """Clear all in-memory stores and point UPLOAD_DIR at a temp directory.
-
-    Using a per-test temp directory keeps uploaded files isolated and avoids
-    leftover files on disk between test runs.
+    Each test gets its own in-memory SQLite database so there is zero state
+    leakage between tests.  The ``get_db`` dependency is overridden to use a
+    session backed by a fresh engine for the duration of the test.
     """
-    auth_routes_module._users.clear()
-    documents_routes_module._documents.clear()
+    # Import ORM models so they register themselves with Base.
+    import app.db_models  # noqa: F401
+
+    test_engine = create_async_engine(_TEST_DATABASE_URL, echo=False)
+
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    TestSessionLocal = async_sessionmaker(test_engine, expire_on_commit=False)
+
+    async def override_get_db():
+        async with TestSessionLocal() as session:
+            yield session
+
+    fastapi_app.dependency_overrides[get_db] = override_get_db
 
     # Redirect uploads to a fresh temp directory for each test.
     original_upload_dir = settings.UPLOAD_DIR
     settings.UPLOAD_DIR = str(tmp_path)
 
-    yield
+    async with AsyncClient(
+        transport=ASGITransport(app=fastapi_app), base_url="http://test"
+    ) as ac:
+        yield ac
 
-    # Restore original value and clear stores again for safety.
+    # Teardown: restore state, drop tables, dispose engine.
     settings.UPLOAD_DIR = original_upload_dir
-    auth_routes_module._users.clear()
-    documents_routes_module._documents.clear()
+    fastapi_app.dependency_overrides.pop(get_db, None)
+
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+    await test_engine.dispose()

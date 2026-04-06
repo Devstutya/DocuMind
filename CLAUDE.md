@@ -27,6 +27,8 @@ DocuMind is an AI-powered document Q&A system using Retrieval-Augmented Generati
 | LLM | OpenAI GPT-4o-mini | Cost-effective reasoning |
 | Embeddings | text-embedding-3-small | 1536-dim vectors |
 | Vector DB | Pinecone (serverless) | Semantic search |
+| Relational DB | SQLite (dev) / PostgreSQL (prod) | User and document persistence |
+| ORM | SQLAlchemy 2.0 async + Alembic | Database access and migrations |
 | PDF Processing | PyMuPDF (fitz) | Text extraction |
 | Auth | JWT + passlib/bcrypt | Secure authentication |
 | Containerization | Docker + Compose | Production deployment |
@@ -83,8 +85,19 @@ DocuMind is an AI-powered document Q&A system using Retrieval-Augmented Generati
 - [x] `documents/chunker.py` — `RecursiveCharacterTextSplitter` (1000 chars, 200 overlap), per-page chunking
 - [x] `documents/embeddings.py` — OpenAI `text-embedding-3-small` wrapper (stubbed in upload until Phase 3)
 - [x] `documents/routes.py` — `POST /api/documents/upload`, `GET /api/documents/`, `DELETE /api/documents/{id}`
-- [x] In-memory document store (to be replaced when Pinecone is wired in Phase 3)
+- [x] In-memory document store (replaced by SQLite in Phase 2c)
 - [x] Tests: 25/25 passing (`tests/test_routes/test_documents.py`)
+
+### ✅ Completed (Phase 2c) — SQLite Database Persistence
+
+- [x] `app/database.py` — async SQLAlchemy engine, `AsyncSessionLocal`, `Base`, `get_db` dependency
+- [x] `app/db_models.py` — `UserModel` (table: `users`) and `DocumentModel` (table: `documents`) ORM models
+- [x] `alembic/` — Alembic infrastructure with async env.py; initial migration `0001_create_users_and_documents`
+- [x] `auth/routes.py` — replaced `_users` dict with `select(UserModel)` + `db.add` / `db.commit`
+- [x] `documents/routes.py` — replaced `_documents` dict with `select(DocumentModel)` + DB CRUD
+- [x] `app/main.py` — lifespan startup creates tables via `Base.metadata.create_all` (dev convenience)
+- [x] `tests/conftest.py` — per-test in-memory SQLite engine, `get_db` dependency override, no shared state
+- [x] Tests: 44/44 passing
 
 ### ✅ Completed (Phase 3) — Pinecone Vector Storage
 

@@ -16,6 +16,9 @@ python-dotenv>=1.0.0
 # passlib 1.7.4 has a detection bug with bcrypt >= 4.1; pin to 4.0.1 until
 # passlib is updated or replaced with pwdlib.
 bcrypt==4.0.1
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+aiosqlite>=0.20.0
 
 # Testing
 pytest>=8.0.0

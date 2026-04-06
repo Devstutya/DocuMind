@@ -7,7 +7,10 @@
       "Bash(./venv/Scripts/python.exe -c \"from langchain.text_splitter import RecursiveCharacterTextSplitter; print\\('langchain.text_splitter OK'\\)\")",
       "Bash(./venv/Scripts/python.exe -m pytest tests/test_routes/test_documents.py -v)",
       "Bash(./venv/Scripts/python.exe -m pytest tests/ -v)",
-      "Bash(python -m pytest tests/ -v --tb=short)"
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(venv/Scripts/python.exe -m pytest tests/ -v)",
+      "Bash(venv/Scripts/pip install:*)",
+      "Bash(venv/Scripts/python.exe -c \"import os; os.environ['DATABASE_URL'] = 'sqlite+aiosqlite:///:memory:'; os.environ.setdefault\\('OPENAI_API_KEY', 'sk-test'\\); os.environ.setdefault\\('PINECONE_API_KEY', 'test'\\); os.environ.setdefault\\('JWT_SECRET_KEY', 'test-secret'\\); from app.config import settings; print\\(settings.DATABASE_URL\\)\")"
     ]
   }
 }

@@ -4,9 +4,13 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.jwt import get_current_user
 from app.config import settings
+from app.database import get_db
+from app.db_models import DocumentModel
 from app.documents.chunker import chunk_document
 from app.documents.embeddings import get_embeddings
 from app.documents.parser import extract_text_from_pdf
@@ -14,13 +18,6 @@ from app.models import DocumentList, DocumentMetadata, DocumentUploadResponse
 from app.rag.retriever import delete_document_vectors, upsert_chunks
 
 router = APIRouter()
-
-# In-memory document store:
-#   { doc_id: {"document_id": str, "filename": str, "page_count": int,
-#              "chunk_count": int, "uploaded_at": datetime, "user_id": str,
-#              "file_path": str} }
-# Replaced with a real database in a future phase.
-_documents: dict[str, dict] = {}
 
 
 def _ensure_upload_dir() -> str:
@@ -44,6 +41,7 @@ def _ensure_upload_dir() -> str:
 async def upload_document(
     file: UploadFile,
     current_user_id: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> DocumentUploadResponse:
     """Upload and process a PDF document for the authenticated user.
 
@@ -131,17 +129,21 @@ async def upload_document(
             detail=f"Failed to embed and index document: {exc}",
         ) from exc
 
-    # --- Persist metadata to in-memory store --------------------------------
+    # --- Persist metadata to database ---------------------------------------
     original_filename = file.filename or f"{doc_id}.pdf"
-    _documents[doc_id] = {
-        "document_id": doc_id,
-        "filename": original_filename,
-        "page_count": len(pages),
-        "chunk_count": len(chunks),
-        "uploaded_at": datetime.utcnow(),
-        "user_id": current_user_id,
-        "file_path": file_path,
-    }
+    now = datetime.utcnow()
+    doc_record = DocumentModel(
+        id=doc_id,
+        filename=original_filename,
+        page_count=len(pages),
+        chunk_count=len(chunks),
+        file_path=file_path,
+        user_id=current_user_id,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(doc_record)
+    await db.commit()
 
     return DocumentUploadResponse(
         document_id=doc_id,
@@ -164,6 +166,7 @@ async def upload_document(
 )
 async def list_documents(
     current_user_id: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> DocumentList:
     """Return all documents uploaded by the currently authenticated user.
 
@@ -188,17 +191,21 @@ async def list_documents(
           "total": 1
         }
     """
+    result = await db.execute(
+        select(DocumentModel).where(DocumentModel.user_id == current_user_id)
+    )
+    rows = result.scalars().all()
+
     user_docs = [
         DocumentMetadata(
-            document_id=doc["document_id"],
-            filename=doc["filename"],
-            page_count=doc["page_count"],
-            chunk_count=doc["chunk_count"],
-            uploaded_at=doc["uploaded_at"],
-            user_id=doc["user_id"],
+            document_id=row.id,
+            filename=row.filename,
+            page_count=row.page_count,
+            chunk_count=row.chunk_count,
+            uploaded_at=row.created_at,
+            user_id=row.user_id,
         )
-        for doc in _documents.values()
-        if doc["user_id"] == current_user_id
+        for row in rows
     ]
     return DocumentList(documents=user_docs, total=len(user_docs))
 
@@ -217,6 +224,7 @@ async def list_documents(
 async def delete_document(
     document_id: str,
     current_user_id: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete a document and its file from disk.
 
@@ -229,11 +237,13 @@ async def delete_document(
         DELETE /api/documents/d1e2f3...
         Authorization: Bearer <jwt>
     """
-    doc = _documents.get(document_id)
+    doc = await db.scalar(
+        select(DocumentModel).where(DocumentModel.id == document_id)
+    )
     if doc is None:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    if doc["user_id"] != current_user_id:
+    if doc.user_id != current_user_id:
         raise HTTPException(status_code=403, detail="Access denied: document belongs to another user")
 
     # Remove vectors from Pinecone (best-effort; don't fail the request on error).
@@ -243,8 +253,9 @@ async def delete_document(
         pass  # Log in Phase 5 when structured logging is added.
 
     # Remove file from disk (best-effort; don't fail the request if already gone).
-    file_path: str = doc.get("file_path", "")
+    file_path: str = doc.file_path or ""
     if file_path and os.path.exists(file_path):
         os.remove(file_path)
 
-    del _documents[document_id]
+    await db.delete(doc)
+    await db.commit()
