@@ -9,7 +9,15 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+_llm = None
+
+
+def _get_llm() -> ChatOpenAI:
+    global _llm
+    if _llm is None:
+        _llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    return _llm
+
 
 SYSTEM_PROMPT = """You are a helpful assistant that answers questions based on the provided context.
 
@@ -76,5 +84,5 @@ async def generate_answer(question: str, chunks: list[dict]) -> str:
         # "RAG stands for Retrieval-Augmented Generation [Page 1]."
     """
     context = format_context(chunks)
-    chain = prompt | llm | StrOutputParser()
+    chain = prompt | _get_llm() | StrOutputParser()
     return await chain.ainvoke({"context": context, "question": question})

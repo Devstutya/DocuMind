@@ -110,6 +110,7 @@ DocuMind is an AI-powered document Q&A system using Retrieval-Augmented Generati
 ### ✅ Completed (Phase 4) — RAG Query Pipeline
 
 - [x] `rag/chain.py` — `generate_answer()` async LangChain chain with GPT-4o-mini (`langchain_core` imports)
+- [x] `rag/chain.py` — `ChatOpenAI` lazy-initialized via `_get_llm()` to avoid module-level import crash when `OPENAI_API_KEY` not yet loaded
 - [x] `rag/memory.py` — `ConversationMemory` singleton, 5-turn sliding window, 30min TTL expiry
 - [x] `rag/routes.py` — `POST /api/rag/query` (auth required), `GET /api/rag/conversations/{id}`
 - [x] History injected into LLM prompt only (not vector query — would dilute retrieval signal)
@@ -117,12 +118,14 @@ DocuMind is an AI-powered document Q&A system using Retrieval-Augmented Generati
 - [x] `main.py` — RAG router wired at `/api/rag`
 - [x] Tests: 57/57 passing (`tests/test_rag/test_routes.py`)
 
-### 🔄 Current Phase: Phase 5 — Rate Limiting & Polish
+### ✅ Completed (Phase 5) — Rate Limiting & Polish
 
-**Ready to Implement:**
-- `utils/rate_limit.py` — 20 req/min per user
-- `utils/logging.py` — structured JSON logging
-- Frontend wiring — connect ChatInterface to `POST /api/rag/query`
+- [x] `utils/rate_limit.py` — `RateLimiter` sliding-window class (per-user, 60s window); `require_rate_limit` FastAPI dependency wraps `get_current_user` — single `Depends` gives both auth + rate limiting
+- [x] `rag/routes.py` — `POST /api/rag/query` now uses `require_rate_limit` instead of bare `get_current_user`; structured log lines emitted on query received and completed (includes `user_id`, `query_time_ms`, `sources_count`)
+- [x] `utils/logging.py` — `_JsonFormatter` emits single-line JSON (`timestamp`, `level`, `logger`, `message` + any `extra` fields); `setup_logging()` called in FastAPI lifespan; `get_logger(__name__)` convenience wrapper
+- [x] `main.py` — `setup_logging()` called at lifespan startup before tables are created
+- [x] Frontend — `ChatInterface.jsx` already wired to `POST /api/rag/query` with conversation memory, source citations, and loading/error states
+- [x] Tests: 62/62 passing (`tests/test_utils/test_rate_limit.py`)
 
 ---
 
@@ -159,8 +162,8 @@ documind/
 │   │   │   └── routes.py        # Query endpoint [DONE]
 │   │   └── utils/
 │   │       ├── __init__.py
-│   │       ├── logging.py       # Structured logging [TODO]
-│   │       └── rate_limit.py    # Rate limiting [TODO]
+│   │       ├── logging.py       # Structured JSON logging [DONE]
+│   │       └── rate_limit.py    # Rate limiting [DONE]
 │   ├── alembic/                 # Migrations [DONE]
 │   │   ├── env.py
 │   │   ├── script.py.mako
@@ -754,44 +757,23 @@ def evaluate_relevance(questions: list, expected_answers: list):
 
 ## Next Immediate Actions
 
-**🎉 Environment Setup Complete!**
-- ✅ OpenAI API key configured
-- ✅ Pinecone API key configured & index created ("documind", 1536 dims, cosine)
-- ✅ JWT secret key generated
+**🎉 All Phases Complete! (62/62 tests passing)**
+- ✅ Phases 1–5 fully implemented
 - ✅ Backend running at http://localhost:8000
 - ✅ Swagger docs available at http://localhost:8000/docs
 
-**Now Ready to Implement Phase 2a - Authentication System:**
+**Ready for Production / Docker Deployment:**
 
-1. **Implement JWT Authentication** (auth/jwt.py):
-   - Create password hashing functions
-   - Create token generation function
-   - Create token validation function
-   - Implement get_current_user dependency
+1. **End-to-end smoke test**:
+   - Start backend: `uvicorn app.main:app --reload`
+   - Start frontend: `cd frontend && npm run dev`
+   - Register a user, upload a PDF, ask a question, verify citations
 
-2. **Implement Auth Routes** (auth/routes.py):
-   - POST /api/auth/register - User registration
-   - POST /api/auth/login - User login with token
-   - Test with Swagger UI
+2. **Docker deployment**:
+   - `docker-compose up --build`
+   - Verify all containers healthy
 
-3. **Continue with PDF Processing** (Phase 2b):
-   - Implement documents/parser.py
-   - Implement documents/chunker.py
-   - Implement documents/embeddings.py
-   - Test complete upload flow
-
-4. **Integrate Pinecone** (Phase 3):
-   - Implement rag/retriever.py
-   - Test vector storage and retrieval
-
-5. **Build RAG Pipeline** (Phase 4):
-   - Implement rag/chain.py
-   - Implement rag/memory.py
-   - Implement rag/routes.py
-   - Test end-to-end query flow
-
-6. **Polish & Deploy** (Phase 5):
-   - Add rate limiting
-   - Add structured logging
-   - Connect frontend to backend
-   - Deploy with Docker Compose
+3. **Optional hardening**:
+   - Persist conversation history to DB (currently in-memory, expires on restart)
+   - Add PostgreSQL for production (swap `DATABASE_URL` to `postgresql+asyncpg://...`)
+   - Add Alembic migration for any new tables

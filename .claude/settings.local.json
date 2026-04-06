@@ -14,7 +14,10 @@
       "Bash(python -m pytest tests/ -v)",
       "Bash(venv/Scripts/python.exe -c \"import langchain; print\\(langchain.__version__\\)\")",
       "Bash(venv/Scripts/python.exe -c \"from langchain_core.prompts import ChatPromptTemplate; print\\('ok'\\)\")",
-      "Bash(venv/Scripts/python.exe -c \"from langchain_core.prompts import ChatPromptTemplate; from langchain_core.output_parsers import StrOutputParser; print\\('core ok'\\)\")"
+      "Bash(venv/Scripts/python.exe -c \"from langchain_core.prompts import ChatPromptTemplate; from langchain_core.output_parsers import StrOutputParser; print\\('core ok'\\)\")",
+      "Bash(venv\\\\Scripts\\\\python -m pytest tests/ -v)",
+      "Bash(venv/Scripts/python -m pytest tests/ -v)",
+      "Bash(npm run:*)"
     ]
   }
 }

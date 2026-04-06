@@ -6,6 +6,7 @@ from app.auth.routes import router as auth_router
 from app.demo.routes import router as demo_router
 from app.documents.routes import router as documents_router
 from app.rag.routes import router as rag_router
+from app.utils.logging import setup_logging
 
 
 @asynccontextmanager
@@ -15,6 +16,8 @@ async def lifespan(app: FastAPI):
     In production, run ``alembic upgrade head`` before starting the server
     so that schema migrations are applied in a controlled, auditable way.
     """
+    setup_logging()
+
     # Import here to avoid circular imports at module load time.
     from app.database import Base, engine
     import app.db_models  # noqa: F401 — registers ORM models with Base

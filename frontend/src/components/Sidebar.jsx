@@ -1,39 +1,70 @@
 import { Link } from 'react-router-dom'
-import { FileText, MessageSquare, Settings, User, LogOut, Upload, History } from 'lucide-react'
+import { FileText, MessageSquare, Settings, User, LogOut, Upload, History, Brain } from 'lucide-react'
+
+const navItems = [
+  { id: 'chat',      icon: MessageSquare, label: 'Chat'        },
+  { id: 'documents', icon: FileText,      label: 'My Documents'},
+  { id: 'history',   icon: History,       label: 'Chat History'},
+  { id: 'upload',    icon: Upload,        label: 'Upload'      },
+  { id: 'settings',  icon: Settings,      label: 'Settings'   },
+  { id: 'profile',   icon: User,          label: 'Profile'    },
+]
 
 function Sidebar({ activeSection, setActiveSection }) {
-  const sidebarItems = [
-    { id: 'chat', icon: MessageSquare, label: 'Chat' },
-    { id: 'documents', icon: FileText, label: 'My Documents' },
-    { id: 'history', icon: History, label: 'Chat History' },
-    { id: 'upload', icon: Upload, label: 'Upload' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
-    { id: 'profile', icon: User, label: 'Profile' },
-  ]
-
   return (
-    <div className="w-64 bg-white shadow-lg flex flex-col">
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-900">DocuMind</h1>
-        <p className="text-sm text-gray-500 mt-1">Dashboard</p>
+    <aside
+      className="w-60 shrink-0 bg-navy-950 flex flex-col border-r border-navy-800"
+      style={{ minHeight: '100vh' }}
+      aria-label="Main navigation"
+    >
+      {/* Logo */}
+      <div className="px-5 py-6 border-b border-navy-800">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-lg">
+            <Brain size={16} className="text-white" />
+          </div>
+          <div>
+            <span className="text-white font-bold text-base tracking-tight">DocuMind</span>
+            <p className="text-navy-400 text-2xs leading-none mt-0.5 font-medium uppercase tracking-widest">
+              AI Assistant
+            </p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          {sidebarItems.map((item) => {
-            const Icon = item.icon
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4">
+        <p className="px-3 mb-2 text-2xs font-semibold uppercase tracking-widest text-navy-500">
+          Workspace
+        </p>
+        <ul className="space-y-0.5" role="list">
+          {navItems.map(({ id, icon: Icon, label }) => {
+            const isActive = activeSection === id
             return (
-              <li key={item.id}>
+              <li key={id}>
                 <button
-                  onClick={() => setActiveSection(item.id)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${
-                    activeSection === item.id
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  onClick={() => setActiveSection(id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={[
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium',
+                    'transition-all duration-150 cursor-pointer',
+                    isActive
+                      ? 'bg-violet-600/20 text-violet-300 shadow-sm'
+                      : 'text-navy-400 hover:bg-navy-800 hover:text-navy-100',
+                  ].join(' ')}
                 >
-                  <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
+                  <Icon
+                    size={17}
+                    className={[
+                      'shrink-0 transition-colors duration-150',
+                      isActive ? 'text-violet-400' : 'text-navy-500 group-hover:text-navy-300',
+                    ].join(' ')}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                  {label}
+                  {isActive && (
+                    <span className="ml-auto w-1 h-1 rounded-full bg-violet-400" aria-hidden="true" />
+                  )}
                 </button>
               </li>
             )
@@ -41,16 +72,18 @@ function Sidebar({ activeSection, setActiveSection }) {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-gray-200">
+      {/* Footer */}
+      <div className="px-3 py-4 border-t border-navy-800">
         <Link
           to="/"
-          className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                     text-navy-400 hover:bg-navy-800 hover:text-red-400 transition-all duration-150"
         >
-          <LogOut size={20} />
-          <span className="font-medium">Logout</span>
+          <LogOut size={17} className="shrink-0" />
+          Sign out
         </Link>
       </div>
-    </div>
+    </aside>
   )
 }
 

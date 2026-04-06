@@ -22,6 +22,10 @@ from app.models import ConversationHistory, QueryRequest, QueryResponse, SourceC
 from app.rag.chain import generate_answer
 from app.rag.memory import memory
 from app.rag.retriever import query_similar
+from app.utils.logging import get_logger
+from app.utils.rate_limit import require_rate_limit
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -37,7 +41,7 @@ router = APIRouter()
 )
 async def query_documents(
     request: QueryRequest,
-    current_user_id: str = Depends(get_current_user),
+    current_user_id: str = Depends(require_rate_limit),
     db: AsyncSession = Depends(get_db),
 ) -> QueryResponse:
     """Answer a question by retrieving relevant document chunks and generating a response.
@@ -91,6 +95,11 @@ async def query_documents(
         }
     """
     start_time = time.time()
+
+    logger.info(
+        "RAG query received",
+        extra={"user_id": current_user_id, "question_length": len(request.question)},
+    )
 
     # Assign a conversation ID if the caller did not supply one.
     conversation_id = request.conversation_id or str(uuid.uuid4())
@@ -148,6 +157,16 @@ async def query_documents(
     memory.add_turn(conversation_id, request.question, answer)
 
     query_time_ms = (time.time() - start_time) * 1000
+
+    logger.info(
+        "RAG query completed",
+        extra={
+            "user_id": current_user_id,
+            "conversation_id": conversation_id,
+            "sources_count": len(sources),
+            "query_time_ms": round(query_time_ms, 1),
+        },
+    )
 
     return QueryResponse(
         answer=answer,

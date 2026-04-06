@@ -1,0 +1,2 @@
+- [DocuMind Design System](project_design_system.md) — Navy/violet palette, Inter font, component class patterns, animation conventions (Phase 5 polish)
+- [DocuMind Dark UI System](project_dark_ui_system.md) — Card/text/border conventions for the navy+violet dark theme; classes to never use
