@@ -8,8 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from app.auth.jwt import get_current_user
 from app.config import settings
 from app.documents.chunker import chunk_document
+from app.documents.embeddings import get_embeddings
 from app.documents.parser import extract_text_from_pdf
 from app.models import DocumentList, DocumentMetadata, DocumentUploadResponse
+from app.rag.retriever import delete_document_vectors, upsert_chunks
 
 router = APIRouter()
 
@@ -46,9 +48,9 @@ async def upload_document(
     """Upload and process a PDF document for the authenticated user.
 
     Validates that the file is a PDF and within the configured size limit,
-    then extracts text and splits it into overlapping chunks. Embedding and
-    vector storage are deferred to Phase 3 — this endpoint returns immediately
-    with ``status="processed"`` once chunking is complete.
+    then extracts text, splits it into overlapping chunks, generates OpenAI
+    embeddings, and upserts the vectors to Pinecone. Returns immediately
+    with ``status="processed"`` once all steps complete.
 
     The file is persisted to ``UPLOAD_DIR`` under a UUID-based filename to
     avoid collisions.
@@ -114,6 +116,20 @@ async def upload_document(
         chunk_size=settings.CHUNK_SIZE,
         overlap=settings.CHUNK_OVERLAP,
     )
+
+    # --- Generate embeddings and upsert to Pinecone -------------------------
+    try:
+        chunk_texts = [chunk["text"] for chunk in chunks]
+        embeddings = get_embeddings(chunk_texts)
+        upsert_chunks(chunks, embeddings)
+    except Exception as exc:
+        # Clean up the file so we don't leave orphaned data on disk.
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to embed and index document: {exc}",
+        ) from exc
 
     # --- Persist metadata to in-memory store --------------------------------
     original_filename = file.filename or f"{doc_id}.pdf"
@@ -219,6 +235,12 @@ async def delete_document(
 
     if doc["user_id"] != current_user_id:
         raise HTTPException(status_code=403, detail="Access denied: document belongs to another user")
+
+    # Remove vectors from Pinecone (best-effort; don't fail the request on error).
+    try:
+        delete_document_vectors(document_id)
+    except Exception:
+        pass  # Log in Phase 5 when structured logging is added.
 
     # Remove file from disk (best-effort; don't fail the request if already gone).
     file_path: str = doc.get("file_path", "")

@@ -1,12 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FileText } from 'lucide-react'
 import Sidebar from '../components/Sidebar'
 import DocumentUpload from '../components/DocumentUpload'
 import ChatInterface from '../components/ChatInterface'
+import api from '../services/api'
 
 function Dashboard() {
   const [selectedDocuments, setSelectedDocuments] = useState([])
   const [activeSection, setActiveSection] = useState('chat')
+  const [user, setUser] = useState(null)
+  const [documentCount, setDocumentCount] = useState(0)
+
+  useEffect(() => {
+    api.getMe().then(setUser).catch(() => {})
+    api.getDocuments().then(data => setDocumentCount(data.total ?? 0)).catch(() => {})
+  }, [])
 
   const renderContent = () => {
     switch (activeSection) {
@@ -110,38 +118,52 @@ function Dashboard() {
         return (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-4">Profile</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                  defaultValue="user@example.com"
-                  disabled
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                  defaultValue="John Doe"
-                />
-              </div>
-              <div className="pt-4">
-                <h3 className="font-medium text-gray-900 mb-2">Usage Statistics</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Documents</p>
-                    <p className="text-2xl font-bold text-indigo-600">12</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Queries</p>
-                    <p className="text-2xl font-bold text-indigo-600">156</p>
+            {!user ? (
+              <p className="text-gray-500">Loading profile...</p>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                  <input
+                    type="text"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50"
+                    value={user.username}
+                    disabled
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50"
+                    value={user.email}
+                    disabled
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
+                  <input
+                    type="text"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50"
+                    value={new Date(user.created_at).toLocaleDateString()}
+                    disabled
+                  />
+                </div>
+                <div className="pt-4">
+                  <h3 className="font-medium text-gray-900 mb-2">Usage Statistics</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">Documents</p>
+                      <p className="text-2xl font-bold text-indigo-600">{documentCount}</p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">Queries</p>
+                      <p className="text-2xl font-bold text-indigo-600">—</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )
       default:

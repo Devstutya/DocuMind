@@ -29,7 +29,7 @@ function DemoPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
-            <DocumentUpload onDocumentsChange={setSelectedDocuments} />
+            <DocumentUpload onDocumentsChange={setSelectedDocuments} demoMode={true} />
           </div>
 
           <div className="lg:col-span-2">

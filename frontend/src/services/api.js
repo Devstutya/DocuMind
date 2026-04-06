@@ -61,6 +61,28 @@ class ApiService {
     this.setToken(null);
   }
 
+  async getMe() {
+    return this.request('/api/auth/me');
+  }
+
+  // Demo endpoints (no auth required)
+  async demoUploadDocument(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${this.baseURL}/api/demo/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Upload failed');
+    }
+
+    return response.json();
+  }
+
   // Document endpoints
   async uploadDocument(file) {
     const formData = new FormData();

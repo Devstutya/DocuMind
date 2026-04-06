@@ -86,11 +86,20 @@ DocuMind is an AI-powered document Q&A system using Retrieval-Augmented Generati
 - [x] In-memory document store (to be replaced when Pinecone is wired in Phase 3)
 - [x] Tests: 25/25 passing (`tests/test_routes/test_documents.py`)
 
-### 🔄 Current Phase: Phase 3 — Pinecone Vector Storage
+### ✅ Completed (Phase 3) — Pinecone Vector Storage
+
+- [x] `rag/retriever.py` — lazy Pinecone index init, `upsert_chunks` (batched 100), `query_similar`, `delete_document_vectors`
+- [x] `documents/routes.py` — upload now generates embeddings + upserts to Pinecone; delete removes vectors
+- [x] Upload failure is clean — disk file removed on embedding/Pinecone error, returns 500
+- [x] Pinecone failure on delete is swallowed — outage can't permanently block deletion
+- [x] Tests: 44/44 passing (`tests/test_routes/test_documents.py` + `tests/test_rag/test_retriever.py`)
+
+### 🔄 Current Phase: Phase 4 — RAG Query Pipeline
 
 **Ready to Implement:**
-- Wire `get_embeddings()` and `upsert_chunks()` into the upload route
-- Implement `rag/retriever.py` (Pinecone index creation, upsert, similarity search, delete)
+- `rag/chain.py` — LangChain QA chain with GPT-4o-mini
+- `rag/memory.py` — sliding window conversation memory (5 turns, 30min TTL)
+- `rag/routes.py` — `POST /api/query` endpoint
 
 ---
 

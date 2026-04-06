@@ -7,9 +7,13 @@ Covers:
                                  oversized file
 - GET  /api/documents/         — lists only the caller's documents
 - DELETE /api/documents/{id}   — happy path, not found, wrong owner
+
+All OpenAI and Pinecone calls are mocked so that the tests run without real
+credentials and without hitting external services.
 """
 
 import io
+from unittest.mock import MagicMock, patch
 
 import fitz  # PyMuPDF — used to create minimal in-memory PDFs for testing
 import pytest
@@ -27,6 +31,9 @@ REGISTER_URL = "/api/auth/register"
 
 _USER_A = {"email": "alice@example.com", "username": "alice", "password": "secret123"}
 _USER_B = {"email": "bob@example.com", "username": "bob", "password": "secret456"}
+
+# A minimal 1536-dimensional embedding vector returned by the mock.
+_FAKE_EMBEDDING: list[float] = [0.0] * 1536
 
 
 # ---------------------------------------------------------------------------
@@ -64,6 +71,21 @@ def _auth_headers(token: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Shared mock context manager for external calls in the upload path.
+# Patches both get_embeddings and upsert_chunks so no real API calls happen.
+# ---------------------------------------------------------------------------
+
+def _mock_upload_externals():
+    """Return a context that mocks out OpenAI embeddings and Pinecone upsert."""
+    patch_embeddings = patch(
+        "app.documents.routes.get_embeddings",
+        return_value=[_FAKE_EMBEDDING],
+    )
+    patch_upsert = patch("app.documents.routes.upsert_chunks", return_value=None)
+    return patch_embeddings, patch_upsert
+
+
+# ---------------------------------------------------------------------------
 # Upload tests
 # ---------------------------------------------------------------------------
 
@@ -72,11 +94,13 @@ async def test_upload_pdf_success(client: AsyncClient):
     """Happy path: authenticated user uploads a valid PDF and receives metadata."""
     token = await _register_and_login(client, _USER_A)
 
-    resp = await client.post(
-        UPLOAD_URL,
-        files=[_pdf_upload_file()],
-        headers=_auth_headers(token),
-    )
+    patch_emb, patch_ups = _mock_upload_externals()
+    with patch_emb, patch_ups:
+        resp = await client.post(
+            UPLOAD_URL,
+            files=[_pdf_upload_file()],
+            headers=_auth_headers(token),
+        )
 
     assert resp.status_code == 201, resp.text
     body = resp.json()
@@ -142,6 +166,28 @@ async def test_upload_oversized_file_returns_400(client: AsyncClient, monkeypatc
     assert "size" in resp.json()["detail"].lower() or "mb" in resp.json()["detail"].lower()
 
 
+async def test_upload_embedding_failure_returns_500(client: AsyncClient):
+    """If the embedding call raises, the endpoint must return 500 and not persist the document."""
+    token = await _register_and_login(client, _USER_A)
+
+    with patch(
+        "app.documents.routes.get_embeddings",
+        side_effect=RuntimeError("OpenAI unavailable"),
+    ):
+        resp = await client.post(
+            UPLOAD_URL,
+            files=[_pdf_upload_file()],
+            headers=_auth_headers(token),
+        )
+
+    assert resp.status_code == 500
+    assert "embed" in resp.json()["detail"].lower() or "index" in resp.json()["detail"].lower()
+
+    # The document must NOT appear in the list (no partial state).
+    list_resp = await client.get(LIST_URL, headers=_auth_headers(token))
+    assert list_resp.json()["total"] == 0
+
+
 # ---------------------------------------------------------------------------
 # List tests
 # ---------------------------------------------------------------------------
@@ -164,22 +210,24 @@ async def test_list_returns_owned_documents_only(client: AsyncClient):
     token_a = await _register_and_login(client, _USER_A)
     token_b = await _register_and_login(client, _USER_B)
 
-    # Alice uploads two documents.
-    for name in ("a1.pdf", "a2.pdf"):
+    patch_emb, patch_ups = _mock_upload_externals()
+    with patch_emb, patch_ups:
+        # Alice uploads two documents.
+        for name in ("a1.pdf", "a2.pdf"):
+            resp = await client.post(
+                UPLOAD_URL,
+                files=[_pdf_upload_file(filename=name)],
+                headers=_auth_headers(token_a),
+            )
+            assert resp.status_code == 201, resp.text
+
+        # Bob uploads one document.
         resp = await client.post(
             UPLOAD_URL,
-            files=[_pdf_upload_file(filename=name)],
-            headers=_auth_headers(token_a),
+            files=[_pdf_upload_file(filename="b1.pdf")],
+            headers=_auth_headers(token_b),
         )
         assert resp.status_code == 201, resp.text
-
-    # Bob uploads one document.
-    resp = await client.post(
-        UPLOAD_URL,
-        files=[_pdf_upload_file(filename="b1.pdf")],
-        headers=_auth_headers(token_b),
-    )
-    assert resp.status_code == 201, resp.text
 
     # Alice should see exactly her 2 documents.
     resp_a = await client.get(LIST_URL, headers=_auth_headers(token_a))
@@ -211,11 +259,13 @@ async def test_list_without_auth_returns_401_or_403(client: AsyncClient):
 
 async def _upload_doc(client: AsyncClient, token: str, filename: str = "doc.pdf") -> str:
     """Upload a PDF and return the document_id."""
-    resp = await client.post(
-        UPLOAD_URL,
-        files=[_pdf_upload_file(filename=filename)],
-        headers=_auth_headers(token),
-    )
+    patch_emb, patch_ups = _mock_upload_externals()
+    with patch_emb, patch_ups:
+        resp = await client.post(
+            UPLOAD_URL,
+            files=[_pdf_upload_file(filename=filename)],
+            headers=_auth_headers(token),
+        )
     assert resp.status_code == 201, resp.text
     return resp.json()["document_id"]
 
@@ -225,8 +275,11 @@ async def test_delete_document_happy_path(client: AsyncClient):
     token = await _register_and_login(client, _USER_A)
     doc_id = await _upload_doc(client, token)
 
-    resp = await client.delete(f"/api/documents/{doc_id}", headers=_auth_headers(token))
+    with patch("app.documents.routes.delete_document_vectors", return_value=None) as mock_del:
+        resp = await client.delete(f"/api/documents/{doc_id}", headers=_auth_headers(token))
+
     assert resp.status_code == 204
+    mock_del.assert_called_once_with(doc_id)
 
     # Confirm it is no longer listed.
     list_resp = await client.get(LIST_URL, headers=_auth_headers(token))
@@ -253,13 +306,15 @@ async def test_delete_other_users_document_returns_403(client: AsyncClient):
     # Alice uploads a document.
     doc_id = await _upload_doc(client, token_a, filename="alice_doc.pdf")
 
-    # Bob tries to delete Alice's document.
-    resp = await client.delete(
-        f"/api/documents/{doc_id}",
-        headers=_auth_headers(token_b),
-    )
+    # Bob tries to delete Alice's document (no Pinecone call should happen).
+    with patch("app.documents.routes.delete_document_vectors", return_value=None) as mock_del:
+        resp = await client.delete(
+            f"/api/documents/{doc_id}",
+            headers=_auth_headers(token_b),
+        )
 
     assert resp.status_code == 403
+    mock_del.assert_not_called()
 
     # Alice's document must still be present.
     list_resp = await client.get(LIST_URL, headers=_auth_headers(token_a))
@@ -271,3 +326,26 @@ async def test_delete_without_auth_returns_401_or_403(client: AsyncClient):
     resp = await client.delete("/api/documents/some-id")
 
     assert resp.status_code in (401, 403)
+
+
+async def test_delete_pinecone_failure_does_not_fail_request(client: AsyncClient):
+    """A Pinecone error during deletion must not prevent a 204 response.
+
+    The delete endpoint treats vector removal as best-effort so that a
+    transient Pinecone outage does not leave documents permanently
+    undeletable for users.
+    """
+    token = await _register_and_login(client, _USER_A)
+    doc_id = await _upload_doc(client, token)
+
+    with patch(
+        "app.documents.routes.delete_document_vectors",
+        side_effect=RuntimeError("Pinecone unavailable"),
+    ):
+        resp = await client.delete(f"/api/documents/{doc_id}", headers=_auth_headers(token))
+
+    assert resp.status_code == 204
+
+    # Document metadata must be gone from the in-memory store.
+    list_resp = await client.get(LIST_URL, headers=_auth_headers(token))
+    assert list_resp.json()["total"] == 0

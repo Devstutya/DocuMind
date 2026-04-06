@@ -1,5 +1,4 @@
 # backend/app/auth/jwt.py
-import os
 from datetime import datetime, timedelta
 
 from fastapi import Depends, HTTPException
@@ -7,7 +6,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+from app.config import settings
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -37,7 +37,7 @@ def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=ALGORITHM)
 
 
 async def get_current_user(
@@ -50,7 +50,7 @@ async def get_current_user(
     """
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str | None = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid token")

@@ -2,19 +2,22 @@ import { useState, useEffect } from 'react'
 import { Upload, File, Trash2 } from 'lucide-react'
 import api from '../services/api'
 
-function DocumentUpload({ onDocumentsChange }) {
+function DocumentUpload({ onDocumentsChange, demoMode = false }) {
   const [documents, setDocuments] = useState([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    loadDocuments()
-  }, [])
+    if (!demoMode) {
+      loadDocuments()
+    }
+  }, [demoMode])
 
   const loadDocuments = async () => {
     try {
       const data = await api.getDocuments()
       setDocuments(data.documents || [])
+      if (onDocumentsChange) onDocumentsChange(data.documents || [])
     } catch (err) {
       console.error('Failed to load documents:', err)
     }
@@ -29,12 +32,26 @@ function DocumentUpload({ onDocumentsChange }) {
       return
     }
 
+    if (demoMode && documents.length >= 1) {
+      setError('Demo mode supports 1 document. Sign up for unlimited access.')
+      return
+    }
+
     setUploading(true)
     setError('')
 
     try {
-      await api.uploadDocument(file)
-      await loadDocuments()
+      const doc = demoMode
+        ? await api.demoUploadDocument(file)
+        : await api.uploadDocument(file)
+
+      if (demoMode) {
+        const updated = [...documents, doc]
+        setDocuments(updated)
+        if (onDocumentsChange) onDocumentsChange(updated)
+      } else {
+        await loadDocuments()
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -44,6 +61,12 @@ function DocumentUpload({ onDocumentsChange }) {
   }
 
   const handleDelete = async (documentId) => {
+    if (demoMode) {
+      const updated = documents.filter(d => d.document_id !== documentId)
+      setDocuments(updated)
+      if (onDocumentsChange) onDocumentsChange(updated)
+      return
+    }
     try {
       await api.deleteDocument(documentId)
       await loadDocuments()
@@ -66,13 +89,17 @@ function DocumentUpload({ onDocumentsChange }) {
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500 transition">
           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-2" />
           <p className="text-sm text-gray-600">
-            {uploading ? 'Uploading...' : 'Click to upload PDF'}
+            {uploading
+              ? 'Uploading...'
+              : demoMode && documents.length >= 1
+              ? 'Demo limit reached (1 PDF). Sign up for more.'
+              : 'Click to upload PDF'}
           </p>
           <input
             type="file"
             accept="application/pdf"
             onChange={handleFileUpload}
-            disabled={uploading}
+            disabled={uploading || (demoMode && documents.length >= 1)}
             className="hidden"
           />
         </div>
