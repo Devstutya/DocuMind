@@ -10,10 +10,11 @@ that should feel premium, unique, and highly polished.
 - Push for creative, non-generic design choices
 
 ## Stack
-- React 18 + TypeScript + Vite
-- Tailwind CSS + shadcn/ui
-- React Query for server state
-- Framer Motion for animations
+- React 18 + JavaScript (JSX) + Vite — **no TypeScript**
+- Tailwind CSS
+- React Router for navigation
+- Lucide React for icons
+- Axios via `services/api.js` for API calls
 
 ## Before making changes
 1. Read the relevant skill in `.claude/skills/`
@@ -24,11 +25,11 @@ that should feel premium, unique, and highly polished.
 - Components get tests when they have logic (conditional
   rendering, user interaction, state changes)
 - Tests live in `frontend/src/__tests__/` or co-located
-  as `ComponentName.test.tsx`
+  as `ComponentName.test.jsx`
 - Use Vitest + React Testing Library
 - Test behavior, not implementation — query by role/label,
   not by class name or test ID
-- For API-dependent components, mock the API layer
+- For API-dependent components, mock the API layer (`services/api.js`)
 - Key things to test:
   - Form validation and submission
   - Loading/error/empty states render correctly

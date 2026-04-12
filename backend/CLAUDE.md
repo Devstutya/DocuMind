@@ -10,10 +10,13 @@ application for PDF document intelligence.
 - Every endpoint needs: validation, error handling, tests
 
 ## Stack
-- Python 3.11, FastAPI, SQLAlchemy, Alembic
-- PostgreSQL with pgvector for embeddings
+- Python 3.11, FastAPI, SQLAlchemy 2.0 async, Alembic
+- SQLite (dev) / PostgreSQL (prod) — swap via `DATABASE_URL`
+- Pinecone (serverless) for vector storage — **not** pgvector
 - PyMuPDF for PDF extraction
-- OpenAI API for embeddings
+- OpenAI API for embeddings (text-embedding-3-small) and generation (GPT-4o-mini)
+- JWT + passlib/bcrypt for authentication
+- Sliding-window rate limiter in `utils/rate_limit.py`
 
 ## Before making changes
 1. Read the relevant skill in `.claude/skills/`
